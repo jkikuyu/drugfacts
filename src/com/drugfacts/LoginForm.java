@@ -11,13 +11,15 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import org.jdesktop.application.Application;
-import org.jdesktop.application.FrameView;
 import org.jdesktop.application.ResourceMap;
 import org.jdesktop.application.SingleFrameApplication;
 
@@ -25,21 +27,30 @@ import org.jdesktop.application.SingleFrameApplication;
  *
  * @author Jude Kikuyu
  */
-public class LoginForm extends FrameView{
+public class LoginForm extends JFrame implements ActionListener  {
+    
     private JButton btnOk, btnCancel;
-    private JLabel lblUsername, lblPassword;
-    private JTextField txtUsername, txtPassword;
+    private JLabel lblUserName, lblPassword;
+    private JTextField txtUserName;
+    private JPasswordField txtPassword;
     private JPanel panel;
     private JFrame frame;
+    private static String OK = "ok";
+    private static String CANCEL = "cancel";
+    private int cnt; // keep login counter
+
+     DrugfactsApp dapp;
+
     public LoginForm(SingleFrameApplication app) {
-        super(app);
+        //super(app);
         initComponents();
     }
     private void initComponents() {
-        lblUsername = new JLabel();
+        cnt = 0;
+        lblUserName = new JLabel();
         lblPassword = new JLabel();
-        txtUsername = new JTextField(30);
-        txtPassword = new JTextField(30);
+        txtUserName = new JTextField(20);
+        txtPassword = new JPasswordField(20);
         btnOk = new JButton();
         btnCancel = new JButton();
         panel = new JPanel();
@@ -50,89 +61,34 @@ public class LoginForm extends FrameView{
                 getResourceMap(LoginForm.class);
 
         // label set up
-        lblUsername.setFont(resourceMap.getFont("label.font"));
-        lblUsername.setText(resourceMap.getString("lblUsername.text"));
-        lblUsername.setName("lblUsername");
+        lblUserName.setFont(resourceMap.getFont("label.font"));
+        lblUserName.setText("User Name");
+        lblUserName.setName("lblUsername");
         lblPassword.setFont(resourceMap.getFont("label.font"));
         lblPassword.setText(resourceMap.getString("lblPassword.text"));
         lblPassword.setName("lblPassword");
         // text field setup
 
-        txtUsername.setFont(resourceMap.getFont("inputfield.font"));
-        txtUsername.setText(resourceMap.getString(""));
-        txtUsername.setName("txtUsername");
+        txtUserName.setFont(resourceMap.getFont("inputfield.font"));
+        txtUserName.setText(resourceMap.getString(""));
+        txtUserName.setName("txtUsername");
 
         txtPassword.setFont(resourceMap.getFont("inputfield.font"));
         txtPassword.setText(resourceMap.getString(""));
         txtPassword.setName("txtPassword");
-
+        txtPassword.setActionCommand(OK);
+        txtPassword.addActionListener(this);
          // button set up
-        btnOk.setText(resourceMap.getString("btnOk.text")); // NOI18N
-        btnOk.setName("btnOk"); // NOI18N
-        btnOk.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                btnOkActionPerformed(e);
-            }
-        });
 
-        btnCancel.setText(resourceMap.getString("btnCancel.text")); // NOI18N
-        btnCancel.setName("btnCancel"); // NOI18N
-        btnCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                btnCancelActionPerformed(e);
-            }
-        });
-        // place layout
-//        GroupLayout layout= new GroupLayout(panel);
-//        panel.setLayout(layout)
-//               ;
-//        layout.setHorizontalGroup(
-//            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-//            .addGroup(layout.createSequentialGroup()
-//                .addGap(43, 43, 43)
-//                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-//                    .addComponent(lblUsername)
-//                    .addComponent(lblPassword))
-//                .addGap(31, 31, 31)
-//                .addGroup(layout.createParallelGroup(
-//                GroupLayout.Alignment.LEADING, false)
-//                .addGroup(GroupLayout.Alignment.TRAILING,
-//                    layout.createSequentialGroup()
-//                .addComponent(btnOk, GroupLayout.PREFERRED_SIZE, 65,
-//                    GroupLayout.PREFERRED_SIZE)
-//                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
-//                    GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-//                .addComponent(btnCancel, GroupLayout.PREFERRED_SIZE, 65,
-//                    GroupLayout.PREFERRED_SIZE))
-//                .addComponent(txtUsername,
-//                    GroupLayout.PREFERRED_SIZE, 156, GroupLayout.PREFERRED_SIZE)
-//                .addComponent(txtPassword, GroupLayout.PREFERRED_SIZE, 156,
-//                GroupLayout.PREFERRED_SIZE))
-//                .addContainerGap(107, Short.MAX_VALUE))
-//);
-//        layout.setVerticalGroup(
-//            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-//            .addGroup(layout.createSequentialGroup()
-//                .addGap(32, 32, 32)
-//                .addGroup(layout.createParallelGroup(
-//                    GroupLayout.Alignment.BASELINE)
-//                    .addComponent(lblUsername)
-//                    .addComponent(txtUsername, GroupLayout.PREFERRED_SIZE,
-//                        GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-//                .addGap(18, 18, 18)
-//                .addGroup(layout.createParallelGroup(
-//                    GroupLayout.Alignment.BASELINE)
-//                    .addComponent(txtPassword, GroupLayout.PREFERRED_SIZE,
-//                        GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-//                    .addComponent(lblPassword))
-//                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 23,
-//                    Short.MAX_VALUE)
-//                .addGroup(layout.createParallelGroup(
-//                    GroupLayout.Alignment.BASELINE)
-//                    .addComponent(btnOk)
-//                    .addComponent(btnCancel))
-//                .addContainerGap())
-//        );
+        btnOk.setText(resourceMap.getString("btnOk.text")); 
+        btnOk.setName("btnOk");
+        btnOk.setActionCommand(OK);
+        btnOk.addActionListener(this);
+        btnCancel.setText(resourceMap.getString("btnCancel.text")); 
+        btnCancel.setName("btnCancel");
+        btnCancel.setActionCommand(CANCEL);
+        btnCancel.addActionListener(this);
+
         GridBagLayout layout= new GridBagLayout();
         panel.setLayout(layout);
         GridBagConstraints gc = new GridBagConstraints();
@@ -141,11 +97,11 @@ public class LoginForm extends FrameView{
 
         gc.gridx = 0;
         gc.gridy = 0;
-        panel.add(lblUsername, gc);
+        panel.add(lblUserName, gc);
 
         gc.gridx = 1;
         gc.gridy = 0;
-        panel.add(txtUsername, gc);
+        panel.add(txtUserName, gc);
 
         gc.gridx = 0;
         gc.gridy = 1;
@@ -157,18 +113,51 @@ public class LoginForm extends FrameView{
         JPanel bp = new JPanel();
         bp.add(btnOk);
         bp.add(btnCancel);
+        add(panel, BorderLayout.CENTER);
+        add(bp, BorderLayout.PAGE_END);
 
-        frame.add(panel, BorderLayout.CENTER);
-        frame.add(bp, BorderLayout.PAGE_END);
-
-
-        setComponent(frame);
     }
-     public void btnCancelActionPerformed(ActionEvent e){
 
-     }
-     public void btnOkActionPerformed(ActionEvent e){
+    public void actionPerformed(ActionEvent e) {
+                String cmd = e.getActionCommand();
 
+        if (OK.equals(cmd)) { //Process the password.
+            char[] pass = txtPassword.getPassword();
+            String userName = txtUserName.getText();
+            if (isPasswordCorrect(userName, pass)) {
+
+            } else {
+                cnt++;
+                if(cnt >= 3)
+                    System.exit(0);
+                JOptionPane.showMessageDialog(frame,"Invalid password. " +
+                "Try again.","Error Message",JOptionPane.ERROR_MESSAGE);
+            }
+
+            //Zero out the possible password, for security.
+            Arrays.fill(pass, '0');
+        } else { //The user has asked for help.
+        }
+
+    }
+    private static boolean isPasswordCorrect(String userName, char[] input ) {
+        boolean isCorrect = true;
+        char[] correctPassword =new char[]{};
+        if (userName.equals("admin")){
+            correctPassword = new char[]{ '1', '2', '3' };
+            if (input.length != correctPassword.length) {
+                isCorrect = false;
+            } else {
+                isCorrect = Arrays.equals (input, correctPassword);
+            }
+        }
+        else{
+
+        }
+        //Zero out the password.
+        Arrays.fill(correctPassword,'0');
+
+        return isCorrect;
     }
 
 }

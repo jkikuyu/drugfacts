@@ -1,44 +1,74 @@
 /*
- * DrugfactsView.java
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
  */
 
 package com.drugfacts;
 
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.ActionMap;
+import javax.swing.Timer;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JToolBar;
+import org.jdesktop.application.Application;
 import org.jdesktop.application.Action;
 import org.jdesktop.application.ResourceMap;
 import org.jdesktop.application.SingleFrameApplication;
-import org.jdesktop.application.FrameView;
 import org.jdesktop.application.TaskMonitor;
-import org.jdesktop.application.Task;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import javax.persistence.RollbackException;
-import javax.swing.Timer;
-import javax.swing.Icon;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import org.jdesktop.beansbinding.AbstractBindingListener;
-import org.jdesktop.beansbinding.Binding;
-import org.jdesktop.beansbinding.PropertyStateEvent;
 
 /**
- * The application's main frame.
+ *
+ * @author Spring park Hotel
  */
-public class DrugfactsView extends FrameView {
-    
-    public DrugfactsView(SingleFrameApplication app) {
-        super(app);
+public class DrugfactsView extends JFrame{
+    private JPanel mainPanel, statusPanel;
+    private JScrollPane masterScrollPane;
+    private JTable masterTable;
+    private JLabel lblFirstName, lblLastName, lblUserName,lblEmail,lblAddress, 
+            statusMessageLabel,statusAnimationLabel;
+    private  JTextField txtUserName, txtFirstName, txtLastName, txtEmail,
+            txtAddress;
+    private JButton btnSave, btnRefresh, btnNew, btndelete;
+    private JMenu fileMenu;
+    private JMenuBar   menuBar;
+    private JMenuItem mitNewRecord, mitDelRecord, mitSaveRecord, mitRefesh,
+            mitExit;
+    private JSeparator spt1, spt2;
+    private JProgressBar progressBar;
+    private final Timer messageTimer, busyIconTimer;
+    private final Icon idleIcon;Icon[] busyIcons = new Icon[15];
+    private int busyIconIndex = 0;
+    private ResourceMap resourceMap;
+    private JToolBar toolbar;
+    private JDialog aboutBox;
+    private boolean saveNeeded;
+    int messageTimeout;
+    DrugfactsApp dapp;
 
+    public DrugfactsView(SingleFrameApplication app){
         initComponents();
 
-        // status bar initialization - message timeout, idle icon and busy animation, etc
-        ResourceMap resourceMap = getResourceMap();
-        int messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");
-	messageTimer = new Timer(messageTimeout, new ActionListener() {
+        messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");
+
+        messageTimer = new Timer(messageTimeout, new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 statusMessageLabel.setText("");
             }
@@ -53,13 +83,12 @@ public class DrugfactsView extends FrameView {
                 busyIconIndex = (busyIconIndex + 1) % busyIcons.length;
                 statusAnimationLabel.setIcon(busyIcons[busyIconIndex]);
             }
-        }); 
+        });
         idleIcon = resourceMap.getIcon("StatusBar.idleIcon");
+
         statusAnimationLabel.setIcon(idleIcon);
         progressBar.setVisible(false);
-
-        // connecting action tasks to status bar via TaskMonitor
-        TaskMonitor taskMonitor = new TaskMonitor(getApplication().getContext());
+        TaskMonitor taskMonitor = new TaskMonitor(dapp.getApplication().getContext());
         taskMonitor.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 String propertyName = evt.getPropertyName();
@@ -89,368 +118,92 @@ public class DrugfactsView extends FrameView {
             }
         });
 
-        // tracking table selection
-        masterTable.getSelectionModel().addListSelectionListener(
-            new ListSelectionListener() {
-                public void valueChanged(ListSelectionEvent e) {
-                    firePropertyChange("recordSelected", !isRecordSelected(), isRecordSelected());
-                }
-            });
-
-        // tracking changes to save
-        bindingGroup.addBindingListener(new AbstractBindingListener() {
-            @Override
-            public void targetChanged(Binding binding, PropertyStateEvent event) {
-                // save action observes saveNeeded property
-                setSaveNeeded(true);
-            }
-        });
-
-        // have a transaction started
-        entityManager.getTransaction().begin();
     }
 
+   
 
-    public boolean isSaveNeeded() {
-        return saveNeeded;
-    }
-
-    private void setSaveNeeded(boolean saveNeeded) {
-        if (saveNeeded != this.saveNeeded) {
-            this.saveNeeded = saveNeeded;
-            firePropertyChange("saveNeeded", !saveNeeded, saveNeeded);
-        }
-    }
-
-    public boolean isRecordSelected() {
-        return masterTable.getSelectedRow() != -1;
-    }
-    
-
-    @Action
-    public void newRecord() {
-        com.drugfacts.Users u = new com.drugfacts.Users();
-        entityManager.persist(u);
-        list.add(u);
-        int row = list.size()-1;
-        masterTable.setRowSelectionInterval(row, row);
-        masterTable.scrollRectToVisible(masterTable.getCellRect(row, 0, true));
-        setSaveNeeded(true);
-    }
-
-    @Action(enabledProperty = "recordSelected")
-    public void deleteRecord() {
-        int[] selected = masterTable.getSelectedRows();
-        List<com.drugfacts.Users> toRemove = new ArrayList<com.drugfacts.Users>(selected.length);
-        for (int idx=0; idx<selected.length; idx++) {
-            com.drugfacts.Users u = list.get(masterTable.convertRowIndexToModel(selected[idx]));
-            toRemove.add(u);
-            entityManager.remove(u);
-        }
-        list.removeAll(toRemove);
-        setSaveNeeded(true);
-    }
-    
-
-    @Action(enabledProperty = "saveNeeded")
-    public Task save() {
-        return new SaveTask(getApplication());
-    }
-
-    private class SaveTask extends Task {
-        SaveTask(org.jdesktop.application.Application app) {
-            super(app);
-        }
-        @Override protected Void doInBackground() {
-            try {
-                entityManager.getTransaction().commit();
-                entityManager.getTransaction().begin();
-            } catch (RollbackException rex) {
-                rex.printStackTrace();
-                entityManager.getTransaction().begin();
-                List<com.drugfacts.Users> merged = new ArrayList<com.drugfacts.Users>(list.size());
-                for (com.drugfacts.Users u : list) {
-                    merged.add(entityManager.merge(u));
-                }
-                list.clear();
-                list.addAll(merged);
-            }
-            return null;
-        }
-        @Override protected void finished() {
-            setSaveNeeded(false);
-        }
-    }
-
-    /**
-     * An example action method showing how to create asynchronous tasks
-     * (running on background) and how to show their progress. Note the
-     * artificial 'Thread.sleep' calls making the task long enough to see the
-     * progress visualization - remove the sleeps for real application.
-     */
-    @Action
-    public Task refresh() {
-       return new RefreshTask(getApplication());
-    }
-
-    private class RefreshTask extends Task {
-        RefreshTask(org.jdesktop.application.Application app) {
-            super(app);
-        }
-        @SuppressWarnings("unchecked")
-        @Override protected Void doInBackground() {
-            try {
-                setProgress(0, 0, 4);
-                setMessage("Rolling back the current changes...");
-                setProgress(1, 0, 4);
-                entityManager.getTransaction().rollback();
-                Thread.sleep(1000L); // remove for real app
-                setProgress(2, 0, 4);
-
-                setMessage("Starting a new transaction...");
-                entityManager.getTransaction().begin();
-                Thread.sleep(500L); // remove for real app
-                setProgress(3, 0, 4);
-
-                setMessage("Fetching new data...");
-                java.util.Collection data = query.getResultList();
-                for (Object entity : data) {
-                    entityManager.refresh(entity);
-                }
-                Thread.sleep(1300L); // remove for real app
-                setProgress(4, 0, 4);
-
-                Thread.sleep(150L); // remove for real app
-                list.clear();
-                list.addAll(data);
-            } catch(InterruptedException ignore) { }
-            return null;
-        }
-        @Override protected void finished() {
-            setMessage("Done.");
-            setSaveNeeded(false);
-        }
-    }
-
-    @Action
-    public void showAboutBox() {
-        if (aboutBox == null) {
-            JFrame mainFrame = DrugfactsApp.getApplication().getMainFrame();
-            aboutBox = new DrugfactsAboutBox(mainFrame);
-            aboutBox.setLocationRelativeTo(mainFrame);
-        }
-        DrugfactsApp.getApplication().show(aboutBox);
-    }
-
-    /** This method is called from within the constructor to
-     * initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is
-     * always regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-        bindingGroup = new org.jdesktop.beansbinding.BindingGroup();
+        dapp = new DrugfactsApp();
+        mainPanel = new JPanel();
+        masterScrollPane = new JScrollPane();
+        masterTable = new JTable();
+        lblFirstName = new JLabel();
+        lblLastName = new JLabel();
+        lblUserName= new JLabel();
+        lblAddress= new JLabel();
+        lblEmail = new JLabel();
+        txtUserName = new JTextField(20);
+        txtFirstName = new JTextField(25);
+        txtLastName = new JTextField(25);
+        txtEmail = new JTextField(30);
+        txtAddress = new JTextField(25);
 
-        mainPanel = new javax.swing.JPanel();
-        masterScrollPane = new javax.swing.JScrollPane();
-        masterTable = new javax.swing.JTable();
-        intimeLabel = new javax.swing.JLabel();
-        outtimeLabel = new javax.swing.JLabel();
-        activeLabel = new javax.swing.JLabel();
-        intimeField = new javax.swing.JTextField();
-        outtimeField = new javax.swing.JTextField();
-        activeField = new javax.swing.JTextField();
-        saveButton = new javax.swing.JButton();
-        refreshButton = new javax.swing.JButton();
-        newButton = new javax.swing.JButton();
-        deleteButton = new javax.swing.JButton();
-        menuBar = new javax.swing.JMenuBar();
-        javax.swing.JMenu fileMenu = new javax.swing.JMenu();
-        javax.swing.JMenuItem newRecordMenuItem = new javax.swing.JMenuItem();
-        javax.swing.JMenuItem deleteRecordMenuItem = new javax.swing.JMenuItem();
-        jSeparator1 = new javax.swing.JSeparator();
-        javax.swing.JMenuItem saveMenuItem = new javax.swing.JMenuItem();
-        javax.swing.JMenuItem refreshMenuItem = new javax.swing.JMenuItem();
-        jSeparator2 = new javax.swing.JSeparator();
-        javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
-        javax.swing.JMenu helpMenu = new javax.swing.JMenu();
-        javax.swing.JMenuItem aboutMenuItem = new javax.swing.JMenuItem();
-        statusPanel = new javax.swing.JPanel();
-        javax.swing.JSeparator statusPanelSeparator = new javax.swing.JSeparator();
-        statusMessageLabel = new javax.swing.JLabel();
-        statusAnimationLabel = new javax.swing.JLabel();
-        progressBar = new javax.swing.JProgressBar();
-        org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getResourceMap(DrugfactsView.class);
-        entityManager = java.beans.Beans.isDesignTime() ? null : javax.persistence.Persistence.createEntityManagerFactory(resourceMap.getString("entityManager.persistenceUnit")).createEntityManager(); // NOI18N
-        query = java.beans.Beans.isDesignTime() ? null : entityManager.createQuery(resourceMap.getString("query.query")); // NOI18N
-        list = java.beans.Beans.isDesignTime() ? java.util.Collections.emptyList() : org.jdesktop.observablecollections.ObservableCollections.observableList(query.getResultList());
-        usersQuery = java.beans.Beans.isDesignTime() ? null : entityManager.createQuery("SELECT u FROM Users u");
-        usersList = java.beans.Beans.isDesignTime() ? java.util.Collections.emptyList() : usersQuery.getResultList();
+        btnSave = new JButton();
+        btnRefresh = new JButton();
+        btnNew = new JButton();
+        btndelete = new JButton();
+        menuBar = new JMenuBar();
+        fileMenu = new JMenu();
+        mitNewRecord = new JMenuItem();
+        mitDelRecord = new JMenuItem();
+        mitSaveRecord = new JMenuItem();
+        mitRefesh = new JMenuItem();
+        mitExit = new JMenuItem();
+        spt1 = new JSeparator();
 
-        mainPanel.setName("mainPanel"); // NOI18N
+        spt2 = new JSeparator();
+        JMenuItem exitMenuItem = new JMenuItem();
+        JMenu helpMenu = new JMenu();
+        JMenuItem aboutMenuItem = new JMenuItem();
+        statusPanel = new JPanel();
+        JSeparator statusPanelSeparator = new JSeparator();
+        //toolbar.add(btnNew);
+        statusMessageLabel = new JLabel();
+        statusAnimationLabel = new JLabel();
+        progressBar = new JProgressBar();
+        resourceMap = Application.getInstance(DrugfactsApp.class)
+                .getContext().getResourceMap(DrugfactsView.class);
+        ActionMap actionMap = Application.getInstance(DrugfactsApp.class)
+                .getContext().getActionMap(DrugfactsView.class, this);
 
-        masterScrollPane.setName("masterScrollPane"); // NOI18N
+        menuBar.setName("menuBar");
 
-        masterTable.setName("masterTable"); // NOI18N
+        fileMenu.setText(resourceMap.getString("fileMenu.text"));
+        fileMenu.setName("fileMenu");
 
-        org.jdesktop.swingbinding.JTableBinding jTableBinding = org.jdesktop.swingbinding.SwingBindings.createJTableBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, list, masterTable);
-        org.jdesktop.swingbinding.JTableBinding.ColumnBinding columnBinding = jTableBinding.addColumnBinding(org.jdesktop.beansbinding.ELProperty.create("${intime}"));
-        columnBinding.setColumnName("Intime");
-        columnBinding.setColumnClass(java.util.Date.class);
-        columnBinding = jTableBinding.addColumnBinding(org.jdesktop.beansbinding.ELProperty.create("${outtime}"));
-        columnBinding.setColumnName("Outtime");
-        columnBinding.setColumnClass(java.util.Date.class);
-        columnBinding = jTableBinding.addColumnBinding(org.jdesktop.beansbinding.ELProperty.create("${active}"));
-        columnBinding.setColumnName("Active");
-        columnBinding.setColumnClass(Boolean.class);
-        bindingGroup.addBinding(jTableBinding);
+        mitNewRecord.setAction(actionMap.get("newRecord"));
+        mitNewRecord.setName("mitNewRecord");
+        fileMenu.add(mitNewRecord);
 
-        masterScrollPane.setViewportView(masterTable);
+        mitDelRecord.setAction(actionMap.get("deleteRecord"));
+        mitDelRecord.setName("mitDelRecord");
+        fileMenu.add(mitDelRecord);
 
-        intimeLabel.setText(resourceMap.getString("intimeLabel.text")); // NOI18N
-        intimeLabel.setName("intimeLabel"); // NOI18N
+        spt1.setName("spt1");
+        fileMenu.add(spt1);
 
-        outtimeLabel.setText(resourceMap.getString("outtimeLabel.text")); // NOI18N
-        outtimeLabel.setName("outtimeLabel"); // NOI18N
+        mitSaveRecord.setAction(actionMap.get("save"));
+        mitSaveRecord.setName("mitSaveRecord");
+        fileMenu.add(mitSaveRecord);
 
-        activeLabel.setText(resourceMap.getString("activeLabel.text")); // NOI18N
-        activeLabel.setName("activeLabel"); // NOI18N
+        mitRefesh.setAction(actionMap.get("refresh"));
+        mitRefesh.setName("mitRefesh");
+        fileMenu.add(mitRefesh);
 
-        intimeField.setName("intimeField"); // NOI18N
+        spt2.setName("spt2"); // NOI18N
+        fileMenu.add(spt2);
 
-        org.jdesktop.beansbinding.Binding binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.intime}"), intimeField, org.jdesktop.beansbinding.BeanProperty.create("text"));
-        binding.setSourceUnreadableValue(null);
-        bindingGroup.addBinding(binding);
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement != null}"), intimeField, org.jdesktop.beansbinding.BeanProperty.create("enabled"));
-        bindingGroup.addBinding(binding);
-
-        outtimeField.setName("outtimeField"); // NOI18N
-
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.outtime}"), outtimeField, org.jdesktop.beansbinding.BeanProperty.create("text"));
-        binding.setSourceUnreadableValue(null);
-        bindingGroup.addBinding(binding);
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement != null}"), outtimeField, org.jdesktop.beansbinding.BeanProperty.create("enabled"));
-        bindingGroup.addBinding(binding);
-
-        activeField.setName("activeField"); // NOI18N
-
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement.active}"), activeField, org.jdesktop.beansbinding.BeanProperty.create("text"));
-        binding.setSourceUnreadableValue(null);
-        bindingGroup.addBinding(binding);
-        binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement != null}"), activeField, org.jdesktop.beansbinding.BeanProperty.create("enabled"));
-        bindingGroup.addBinding(binding);
-
-        javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getActionMap(DrugfactsView.class, this);
-        saveButton.setAction(actionMap.get("save")); // NOI18N
-        saveButton.setName("saveButton"); // NOI18N
-
-        refreshButton.setAction(actionMap.get("refresh")); // NOI18N
-        refreshButton.setName("refreshButton"); // NOI18N
-
-        newButton.setAction(actionMap.get("newRecord")); // NOI18N
-        newButton.setName("newButton"); // NOI18N
-
-        deleteButton.setAction(actionMap.get("deleteRecord")); // NOI18N
-        deleteButton.setName("deleteButton"); // NOI18N
-
-        javax.swing.GroupLayout mainPanelLayout = new javax.swing.GroupLayout(mainPanel);
-        mainPanel.setLayout(mainPanelLayout);
-        mainPanelLayout.setHorizontalGroup(
-            mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(mainPanelLayout.createSequentialGroup()
-                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mainPanelLayout.createSequentialGroup()
-                        .addComponent(newButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(deleteButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(refreshButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(saveButton))
-                    .addGroup(mainPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(intimeLabel)
-                            .addComponent(outtimeLabel)
-                            .addComponent(activeLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(intimeField, javax.swing.GroupLayout.DEFAULT_SIZE, 381, Short.MAX_VALUE)
-                            .addComponent(outtimeField, javax.swing.GroupLayout.DEFAULT_SIZE, 381, Short.MAX_VALUE)
-                            .addComponent(activeField, javax.swing.GroupLayout.DEFAULT_SIZE, 381, Short.MAX_VALUE)))
-                    .addGroup(mainPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(masterScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 427, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-
-        mainPanelLayout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {deleteButton, newButton, refreshButton, saveButton});
-
-        mainPanelLayout.setVerticalGroup(
-            mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(mainPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(masterScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 267, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(intimeLabel)
-                    .addComponent(intimeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(outtimeLabel)
-                    .addComponent(outtimeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(activeLabel)
-                    .addComponent(activeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(mainPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(saveButton)
-                    .addComponent(refreshButton)
-                    .addComponent(deleteButton)
-                    .addComponent(newButton))
-                .addContainerGap())
-        );
-
-        menuBar.setName("menuBar"); // NOI18N
-
-        fileMenu.setText(resourceMap.getString("fileMenu.text")); // NOI18N
-        fileMenu.setName("fileMenu"); // NOI18N
-
-        newRecordMenuItem.setAction(actionMap.get("newRecord")); // NOI18N
-        newRecordMenuItem.setName("newRecordMenuItem"); // NOI18N
-        fileMenu.add(newRecordMenuItem);
-
-        deleteRecordMenuItem.setAction(actionMap.get("deleteRecord")); // NOI18N
-        deleteRecordMenuItem.setName("deleteRecordMenuItem"); // NOI18N
-        fileMenu.add(deleteRecordMenuItem);
-
-        jSeparator1.setName("jSeparator1"); // NOI18N
-        fileMenu.add(jSeparator1);
-
-        saveMenuItem.setAction(actionMap.get("save")); // NOI18N
-        saveMenuItem.setName("saveMenuItem"); // NOI18N
-        fileMenu.add(saveMenuItem);
-
-        refreshMenuItem.setAction(actionMap.get("refresh")); // NOI18N
-        refreshMenuItem.setName("refreshMenuItem"); // NOI18N
-        fileMenu.add(refreshMenuItem);
-
-        jSeparator2.setName("jSeparator2"); // NOI18N
-        fileMenu.add(jSeparator2);
-
-        exitMenuItem.setAction(actionMap.get("quit")); // NOI18N
-        exitMenuItem.setName("exitMenuItem"); // NOI18N
-        fileMenu.add(exitMenuItem);
+        mitExit.setAction(actionMap.get("quit"));
+        mitExit.setName("mitExit");
+        fileMenu.add(mitExit);
 
         menuBar.add(fileMenu);
 
-        helpMenu.setText(resourceMap.getString("helpMenu.text")); // NOI18N
-        helpMenu.setName("helpMenu"); // NOI18N
+        helpMenu.setText(resourceMap.getString("helpMenu.text"));
+        helpMenu.setName("helpMenu");
 
-        aboutMenuItem.setAction(actionMap.get("showAboutBox")); // NOI18N
-        aboutMenuItem.setName("aboutMenuItem"); // NOI18N
+        aboutMenuItem.setAction(actionMap.get("showAboutBox"));
+        aboutMenuItem.setName("aboutMenuItem");
         helpMenu.add(aboutMenuItem);
 
         menuBar.add(helpMenu);
@@ -466,75 +219,88 @@ public class DrugfactsView extends FrameView {
 
         progressBar.setName("progressBar"); // NOI18N
 
-        javax.swing.GroupLayout statusPanelLayout = new javax.swing.GroupLayout(statusPanel);
-        statusPanel.setLayout(statusPanelLayout);
-        statusPanelLayout.setHorizontalGroup(
-            statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
-            .addGroup(statusPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 277, Short.MAX_VALUE)
-                .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(statusAnimationLabel)
-                .addContainerGap())
-        );
-        statusPanelLayout.setVerticalGroup(
-            statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(statusPanelLayout.createSequentialGroup()
-                .addComponent(statusPanelSeparator, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(statusMessageLabel)
-                    .addComponent(statusAnimationLabel)
-                    .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(3, 3, 3))
-        );
 
-        setComponent(mainPanel);
-        setMenuBar(menuBar);
-        setStatusBar(statusPanel);
+        lblLastName.setFont(resourceMap.getFont("label.font"));
+        lblLastName.setText(resourceMap.getString("lblLastName.text"));
+        lblLastName.setName("lblLastName"); 
 
-        bindingGroup.bind();
-    }// </editor-fold>//GEN-END:initComponents
+        lblLastName.setFont(resourceMap.getFont("label.font"));
+        lblFirstName.setText(resourceMap.getString("lblFirtName.text"));
+        lblFirstName.setName("lblFirstName");
+        lblUserName.setFont(resourceMap.getFont("label.font"));
+        lblUserName.setText(resourceMap.getString("lblUserName.text"));
+        lblUserName.setName("lblUserName"); 
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextField activeField;
-    private javax.swing.JLabel activeLabel;
-    private javax.swing.JButton deleteButton;
-    private javax.persistence.EntityManager entityManager;
-    private javax.swing.JTextField intimeField;
-    private javax.swing.JLabel intimeLabel;
-    private javax.swing.JSeparator jSeparator1;
-    private javax.swing.JSeparator jSeparator2;
-    private java.util.List<com.drugfacts.Users> list;
-    private javax.swing.JPanel mainPanel;
-    private javax.swing.JScrollPane masterScrollPane;
-    private javax.swing.JTable masterTable;
-    private javax.swing.JMenuBar menuBar;
-    private javax.swing.JButton newButton;
-    private javax.swing.JTextField outtimeField;
-    private javax.swing.JLabel outtimeLabel;
-    private javax.swing.JProgressBar progressBar;
-    private javax.persistence.Query query;
-    private javax.swing.JButton refreshButton;
-    private javax.swing.JButton saveButton;
-    private javax.swing.JLabel statusAnimationLabel;
-    private javax.swing.JLabel statusMessageLabel;
-    private javax.swing.JPanel statusPanel;
-    private java.util.List<com.drugfacts.Users> usersList;
-    private javax.persistence.Query usersQuery;
-    private org.jdesktop.beansbinding.BindingGroup bindingGroup;
-    // End of variables declaration//GEN-END:variables
+        lblAddress.setText(resourceMap.getString("lblAddress.text"));
+        lblAddress.setName("lblAddress");
 
-    private final Timer messageTimer;
-    private final Timer busyIconTimer;
-    private final Icon idleIcon;
-    private final Icon[] busyIcons = new Icon[15];
-    private int busyIconIndex = 0;
+        lblEmail.setText(resourceMap.getString("lblEmail.text"));
+        lblEmail.setName("lblEmail");
+        txtFirstName.setName("txtUserName");
+        txtLastName.setName("txtUserName");
+        txtUserName.setName("txtUserName");
+        txtEmail.setName("txtUserName");
+        txtAddress.setName("txtUserName");
 
-    private JDialog aboutBox;
+        GridBagLayout layout= new GridBagLayout();
+        mainPanel.setLayout(layout);
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.insets = new Insets(10, 10, 10, 10);
 
-    private boolean saveNeeded;
+        gc.gridx = 0;
+        gc.gridy = 0;
+        mainPanel.add(lblFirstName, gc);
+
+        gc.gridx = 1;
+        gc.gridy = 0;
+        mainPanel.add(txtFirstName, gc);
+
+        gc.gridx = 0;
+        gc.gridy = 1;
+        mainPanel.add(lblLastName, gc);
+
+        gc.gridx = 1;
+        gc.gridy = 1;
+        mainPanel.add(txtLastName, gc);
+
+        gc.gridx = 0;
+        gc.gridy = 2;
+        mainPanel.add(lblUserName, gc);
+
+        gc.gridx = 1;
+        gc.gridy = 2;
+        mainPanel.add(txtUserName, gc);
+
+        gc.gridx = 0;
+        gc.gridy = 3;
+        mainPanel.add(lblEmail, gc);
+
+        gc.gridx = 1;
+        gc.gridy = 3;
+        mainPanel.add(txtEmail, gc);
+        gc.gridx = 0;
+        gc.gridy = 4;
+        mainPanel.add(lblAddress, gc);
+
+        gc.gridx = 1;
+        gc.gridy = 4;
+        mainPanel.add(txtAddress, gc);
+        add(mainPanel, BorderLayout.CENTER);
+        add(menuBar,BorderLayout.NORTH);
+
+    }
+    @Action
+    public void newRecord() {
+    }
+    @Action
+    public void showAboutBox() {
+        if (aboutBox == null) {
+            JFrame mainFrame = DrugfactsApp.getApplication().getMainFrame();
+            aboutBox = new DrugfactsAboutBox(mainFrame);
+            aboutBox.setLocationRelativeTo(mainFrame);
+        }
+        DrugfactsApp.getApplication().show(aboutBox);
+    }
+
 }
