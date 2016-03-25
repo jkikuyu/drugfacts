@@ -60,10 +60,12 @@ public class DrugfactsView extends JFrame{
     private JToolBar toolbar;
     private JDialog aboutBox;
     private boolean saveNeeded;
+
+
     int messageTimeout;
     DrugfactsApp dapp;
 
-    public DrugfactsView(SingleFrameApplication app){
+    public DrugfactsView(final JFrame parent){
         initComponents();
 
         messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");

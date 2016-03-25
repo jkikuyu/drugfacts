@@ -11,8 +11,11 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Arrays;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -27,22 +30,25 @@ import org.jdesktop.application.SingleFrameApplication;
  *
  * @author Jude Kikuyu
  */
-public class LoginForm extends JFrame implements ActionListener  {
+public class LoginForm extends JDialog implements ActionListener  {
     
     private JButton btnOk, btnCancel;
     private JLabel lblUserName, lblPassword;
     private JTextField txtUserName;
     private JPasswordField txtPassword;
     private JPanel panel;
-    private JFrame frame;
+    //private JFrame parent;
     private static String OK = "ok";
     private static String CANCEL = "cancel";
     private int cnt; // keep login counter
-
-     DrugfactsApp dapp;
-
-    public LoginForm(SingleFrameApplication app) {
-        //super(app);
+    private boolean loginSuccess;
+    DrugfactsApp dapp;
+    public LoginForm(){
+      this(null, true);
+    }
+    public LoginForm(final JFrame parent, boolean model) {
+        super(parent, model );
+ //       this.parent = parent;
         initComponents();
     }
     private void initComponents() {
@@ -54,7 +60,8 @@ public class LoginForm extends JFrame implements ActionListener  {
         btnOk = new JButton();
         btnCancel = new JButton();
         panel = new JPanel();
-        frame= new JFrame();
+        loginSuccess = false;
+        //frame= new JFrame();
         panel.setName("panel");
         // use resource to obtain label titles and properties
         ResourceMap resourceMap = Application.getInstance(DrugfactsApp.class).getContext().
@@ -115,6 +122,16 @@ public class LoginForm extends JFrame implements ActionListener  {
         bp.add(btnCancel);
         add(panel, BorderLayout.CENTER);
         add(bp, BorderLayout.PAGE_END);
+        pack();
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.exit(0);
+            }
+        });
 
     }
 
@@ -124,31 +141,38 @@ public class LoginForm extends JFrame implements ActionListener  {
         if (OK.equals(cmd)) { //Process the password.
             char[] pass = txtPassword.getPassword();
             String userName = txtUserName.getText();
+            dapp = new DrugfactsApp();
             if (isPasswordCorrect(userName, pass)) {
+                dapp.show(new DrugfactsView(dapp.getMainFrame()));
+                this.dispose();
+
+
 
             } else {
                 cnt++;
                 if(cnt >= 3)
                     System.exit(0);
-                JOptionPane.showMessageDialog(frame,"Invalid password. " +
+                JOptionPane.showMessageDialog(this,"Invalid password. " +
                 "Try again.","Error Message",JOptionPane.ERROR_MESSAGE);
             }
 
             //Zero out the possible password, for security.
             Arrays.fill(pass, '0');
-        } else { //The user has asked for help.
+        } else { //The user has canceled
+                setVisible(false);
+                //parent.dispose();
+                System.exit(0);
         }
 
     }
-    private static boolean isPasswordCorrect(String userName, char[] input ) {
-        boolean isCorrect = true;
+    private boolean isPasswordCorrect(String userName, char[] input ) {
         char[] correctPassword =new char[]{};
         if (userName.equals("admin")){
             correctPassword = new char[]{ '1', '2', '3' };
             if (input.length != correctPassword.length) {
-                isCorrect = false;
+                loginSuccess = false;
             } else {
-                isCorrect = Arrays.equals (input, correctPassword);
+                loginSuccess = Arrays.equals (input, correctPassword);
             }
         }
         else{
@@ -157,7 +181,9 @@ public class LoginForm extends JFrame implements ActionListener  {
         //Zero out the password.
         Arrays.fill(correctPassword,'0');
 
-        return isCorrect;
+        return loginSuccess;
     }
-
+    public boolean isAuthenticated(){
+        return loginSuccess;
+    }
 }
