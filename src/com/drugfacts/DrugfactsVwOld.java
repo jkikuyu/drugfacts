@@ -28,9 +28,9 @@ import org.jdesktop.beansbinding.PropertyStateEvent;
 /**
  * The application's main frame.
  */
-public class DrugfactsView extends FrameView {
+public class DrugfactsVwOld extends FrameView {
     
-    public DrugfactsView(SingleFrameApplication app) {
+    public DrugfactsVwOld(SingleFrameApplication app) {
         super(app);
 
         initComponents();
@@ -281,7 +281,7 @@ public class DrugfactsView extends FrameView {
         statusMessageLabel = new javax.swing.JLabel();
         statusAnimationLabel = new javax.swing.JLabel();
         progressBar = new javax.swing.JProgressBar();
-        org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getResourceMap(DrugfactsView.class);
+        org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getResourceMap(DrugfactsVwOld.class);
         entityManager = java.beans.Beans.isDesignTime() ? null : javax.persistence.Persistence.createEntityManagerFactory(resourceMap.getString("entityManager.persistenceUnit")).createEntityManager(); // NOI18N
         query = java.beans.Beans.isDesignTime() ? null : entityManager.createQuery(resourceMap.getString("query.query")); // NOI18N
         list = java.beans.Beans.isDesignTime() ? java.util.Collections.emptyList() : org.jdesktop.observablecollections.ObservableCollections.observableList(query.getResultList());
@@ -341,7 +341,7 @@ public class DrugfactsView extends FrameView {
         binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ, masterTable, org.jdesktop.beansbinding.ELProperty.create("${selectedElement != null}"), activeField, org.jdesktop.beansbinding.BeanProperty.create("enabled"));
         bindingGroup.addBinding(binding);
 
-        javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getActionMap(DrugfactsView.class, this);
+        javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(com.drugfacts.DrugfactsApp.class).getContext().getActionMap(DrugfactsVwOld.class, this);
         saveButton.setAction(actionMap.get("save")); // NOI18N
         saveButton.setName("saveButton"); // NOI18N
 

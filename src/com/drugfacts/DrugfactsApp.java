@@ -16,8 +16,8 @@ public class DrugfactsApp extends SingleFrameApplication {
      * At startup create and show the main frame of the application.
      */
     @Override protected void startup() {
-
         show(new LoginForm(this.getMainFrame(),true));
+        show(new DrugfactsView(this.getMainFrame()));
     }
 
     /**

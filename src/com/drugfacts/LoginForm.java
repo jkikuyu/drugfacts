@@ -24,7 +24,6 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import org.jdesktop.application.Application;
 import org.jdesktop.application.ResourceMap;
-import org.jdesktop.application.SingleFrameApplication;
 
 /**
  *
@@ -37,7 +36,7 @@ public class LoginForm extends JDialog implements ActionListener  {
     private JTextField txtUserName;
     private JPasswordField txtPassword;
     private JPanel panel;
-    //private JFrame parent;
+    private JFrame parent;
     private static String OK = "ok";
     private static String CANCEL = "cancel";
     private int cnt; // keep login counter
@@ -48,7 +47,7 @@ public class LoginForm extends JDialog implements ActionListener  {
     }
     public LoginForm(final JFrame parent, boolean model) {
         super(parent, model );
- //       this.parent = parent;
+        this.parent = parent;
         initComponents();
     }
     private void initComponents() {
@@ -63,6 +62,7 @@ public class LoginForm extends JDialog implements ActionListener  {
         loginSuccess = false;
         //frame= new JFrame();
         panel.setName("panel");
+
         // use resource to obtain label titles and properties
         ResourceMap resourceMap = Application.getInstance(DrugfactsApp.class).getContext().
                 getResourceMap(LoginForm.class);
@@ -143,8 +143,9 @@ public class LoginForm extends JDialog implements ActionListener  {
             String userName = txtUserName.getText();
             dapp = new DrugfactsApp();
             if (isPasswordCorrect(userName, pass)) {
-                dapp.show(new DrugfactsView(dapp.getMainFrame()));
-                this.dispose();
+                //new DrugfactsView(parent).setVisible(true);
+
+                parent.dispose();
 
 
 
@@ -181,9 +182,6 @@ public class LoginForm extends JDialog implements ActionListener  {
         //Zero out the password.
         Arrays.fill(correctPassword,'0');
 
-        return loginSuccess;
-    }
-    public boolean isAuthenticated(){
         return loginSuccess;
     }
 }
