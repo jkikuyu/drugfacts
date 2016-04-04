@@ -7,14 +7,12 @@ package com.drugfacts;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 //import javax.swing.Action;
 import java.net.URL;
 import javax.swing.ActionMap;
-import javax.swing.BorderFactory;
 import javax.swing.Timer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -25,12 +23,12 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import org.jdesktop.application.Application;
 //import org.jdesktop.application.Action;
@@ -42,19 +40,17 @@ import org.jdesktop.application.TaskMonitor;
  * @author Spring park Hotel
  */
 public class DrugfactsView extends JFrame{
-    private JPanel lpanelusr,tpanelusr, uinpanel,uoutpanel, statusPanel,toolPanel ;
     private JScrollPane masterScrollPane;
+    protected  JPanel statusPanel,toolPanel;
 
     private JTable masterTable;
-    private JLabel lblFirstName, lblLastName, lblUserName,lblEmail,lblAddress,
-            statusMessageLabel,statusAnimationLabel;
-    private  JTextField txtUserName, txtFirstName, txtLastName, txtEmail,
-            txtAddress;
-    private JButton btnSave, btnRefresh, btnNew, btnDelete;
+    private JLabel statusMessageLabel,statusAnimationLabel;
+    private JButton btnSave, btnRefresh, btnEdit, btnDelete, btnNext,
+        btnBack,btnFind, btnExit;
     private JMenu fileMenu;
     private JMenuBar   menuBar;
-    private JMenuItem mitNewRecord, mitDelRecord, mitSaveRecord, mitRefesh,
-            mitExit;
+    private JMenuItem mitDrugfacts, mitUserDetail, mitNewRecord,
+            mitSaveRecord, mitRefesh, mitExit;
     private JSeparator spt1, spt2;
     private JProgressBar progressBar;
     private final Timer messageTimer, busyIconTimer;
@@ -65,9 +61,10 @@ public class DrugfactsView extends JFrame{
     private JDialog aboutBox;
     private boolean saveNeeded;
     private JFrame parent;
-    javax.swing.Action aNewRec, aDelRec, aSave, aRefresh;
-
-
+    private javax.swing.Action aDrugfacts,aUserDetail, aSave, aDelete, aBack, aNext;
+    private UserDetailsForm userDetailPanel ;
+    private DrugFactsConnect dbConnect;
+    private ActionMap actionMap;
     int messageTimeout;
     DrugfactsApp dapp;
 
@@ -130,94 +127,81 @@ public class DrugfactsView extends JFrame{
     }
     private void initComponents() {
         dapp = new DrugfactsApp();
-        lpanelusr = new JPanel();
-        tpanelusr = new JPanel();
-        uinpanel = new JPanel();
-        uoutpanel = new JPanel();
-        toolPanel = new JPanel();
 
         masterScrollPane = new JScrollPane();
         masterTable = new JTable();
-        lblFirstName = new JLabel();
-        lblLastName = new JLabel();
-        lblUserName= new JLabel();
-        lblAddress= new JLabel();
-        lblEmail = new JLabel();
-        txtUserName = new JTextField(20);
-        txtFirstName = new JTextField(25);
-        txtLastName = new JTextField(25);
-        txtEmail = new JTextField(30);
-        txtAddress = new JTextField(25);
+        //userDetailPanel = new JPanel();
 
         btnSave = new JButton();
         btnRefresh = new JButton();
-        btnNew = new JButton();
+        btnEdit = new JButton();
         btnDelete = new JButton();
+        btnNext= new JButton();
+        btnBack= new JButton();
+        btnFind = new JButton();
+        btnExit = new JButton();
+        toolPanel = new JPanel();
         menuBar = new JMenuBar();
         fileMenu = new JMenu();
         mitNewRecord = new JMenuItem();
-        mitDelRecord = new JMenuItem();
+        mitUserDetail = new JMenuItem();
         mitSaveRecord = new JMenuItem();
+        mitDrugfacts = new JMenuItem();
+        mitUserDetail = new JMenuItem();
         mitRefesh = new JMenuItem();
         mitExit = new JMenuItem();
         spt1 = new JSeparator();
+        actionMap = Application.getInstance(DrugfactsApp.class)
+                .getContext().getActionMap(DrugfactsView.class, this);
+        resourceMap = Application.getInstance(DrugfactsApp.class)
+                .getContext().getResourceMap(DrugfactsView.class);
+        aDrugfacts = actionMap.get("drugFactsDetail");
+        aUserDetail = actionMap.get("showUserDetail");
+        aSave= actionMap.get("aSave");
 
-        setTitle( "Standard Drugfacts Toolbar" );
-		setSize( 400, 250 );
-		setBackground( Color.gray );
 
-                JToolBar stdtbar = new JToolBar();
-		toolPanel.add( stdtbar, BorderLayout.NORTH );
+        setTitle( "Drug Facts" );
+        setSize( 400, 250 );
+        setBackground( Color.gray );
 
-		// Add some buttons to the toolbar
-		btnNew = addToolbarButton( stdtbar, false, "Add","add", "Add a new record" );
-		btnSave = addToolbarButton( stdtbar, true, "Save","save", "Save record" );
-		stdtbar.addSeparator();
-		btnDelete = addToolbarButton( stdtbar, true, "delete", "Delete", "Delete record" );
-		btnRefresh = addToolbarButton( stdtbar, true, "refresh", "Refresh", "reload record" );
+        JToolBar stdtbar = new JToolBar();
+        toolPanel.add( stdtbar, BorderLayout.NORTH );
+
+        // Add some buttons to the toolbar
+        //btnEdit = addToolbarButton( stdtbar, true, "Edit","edit", "Edit record" );
+        btnSave = addToolbarButton( stdtbar, true, "Save","save", "Save record", aSave);
+        btnSave.setEnabled(false);
+        stdtbar.addSeparator();
+        btnDelete = addToolbarButton( stdtbar, true, "delete", "Delete", "Delete record",aDelete );
+        btnBack = addToolbarButton( stdtbar, true, "back", "Back", "previous record",aBack );
+
+        btnNext = addToolbarButton( stdtbar, true, "forward", "Forward", "next record",aNext);
 
         spt2 = new JSeparator();
         //JMenuItem exitMenuItem = new JMenuItem();
         JMenu helpMenu = new JMenu();
-        JMenuItem aboutMenuItem = new JMenuItem();
+        JMenuItem mitAbout = new JMenuItem();
         statusPanel = new JPanel();
+       
         JSeparator statusPanelSeparator = new JSeparator();
         //toolbar.add(btnNew);
         statusMessageLabel = new JLabel();
         statusAnimationLabel = new JLabel();
         progressBar = new JProgressBar();
-        resourceMap = Application.getInstance(DrugfactsApp.class)
-                .getContext().getResourceMap(DrugfactsView.class);
-        ActionMap actionMap = Application.getInstance(DrugfactsApp.class)
-                .getContext().getActionMap(DrugfactsView.class, this);
-
-        aNewRec = actionMap.get("newRecord");
-        aDelRec = actionMap.get("delRecord");
-        aSave = actionMap.get("save");
-        aRefresh = actionMap.get("refresh");
-
-        menuBar.setName("menuBar");
-
         fileMenu.setText(resourceMap.getString("fileMenu.text"));
         fileMenu.setName("fileMenu");
-        mitNewRecord.setAction(aNewRec);
-        mitNewRecord.setName("mitNewRecord");
-        fileMenu.add(mitNewRecord);
 
-        mitDelRecord.setAction(aDelRec);
-        mitDelRecord.setName("mitDelRecord");
-        fileMenu.add(mitDelRecord);
+        mitDrugfacts.setAction(aDrugfacts);
+        mitDrugfacts.setName("mitDrugfacts");
+        fileMenu.add(mitDrugfacts);
 
         spt1.setName("spt1");
         fileMenu.add(spt1);
 
-        mitSaveRecord.setAction(aSave);
-        mitSaveRecord.setName("mitSaveRecord");
-        fileMenu.add(mitSaveRecord);
+        mitUserDetail.setAction(aUserDetail);
+        mitUserDetail.setName("mitUserDetail");
+        fileMenu.add(mitUserDetail);
 
-        mitRefesh.setAction(aRefresh);
-        mitRefesh.setName("mitRefesh");
-        fileMenu.add(mitRefesh);
 
         spt2.setName("spt2");
         fileMenu.add(spt2);
@@ -231,9 +215,9 @@ public class DrugfactsView extends JFrame{
         helpMenu.setText(resourceMap.getString("helpMenu.text"));
         helpMenu.setName("helpMenu");
 
-        aboutMenuItem.setAction(actionMap.get("showAboutBox"));
-        aboutMenuItem.setName("aboutMenuItem");
-        helpMenu.add(aboutMenuItem);
+        mitAbout.setAction(actionMap.get("showAboutBox"));
+        mitAbout.setName("mitAbout");
+        helpMenu.add(mitAbout);
 
         menuBar.add(helpMenu);
 
@@ -248,53 +232,6 @@ public class DrugfactsView extends JFrame{
 
         progressBar.setName("progressBar");
 
-        lblFirstName.setFont(resourceMap.getFont("label.font"));
-        lblFirstName.setText(resourceMap.getString("lblFirstName.text"));
-        lblFirstName.setName("lblFirstName");
-        lblLastName.setFont(resourceMap.getFont("label.font"));
-        lblLastName.setText(resourceMap.getString("lblLastName.text"));
-        lblLastName.setName("lblLastName");
-
-        lblUserName.setFont(resourceMap.getFont("label.font"));
-        lblUserName.setText(resourceMap.getString("lblUserName.text"));
-        lblUserName.setName("lblUserName");
-
-        lblAddress.setText(resourceMap.getString("lblAddress.text"));
-        lblAddress.setName("lblAddress");
-
-        lblEmail.setText(resourceMap.getString("lblEmail.text"));
-        lblEmail.setName("lblEmail");
-        txtFirstName.setName("txtUserName");
-        txtLastName.setName("txtUserName");
-        txtUserName.setName("txtUserName");
-        txtEmail.setName("txtUserName");
-        txtAddress.setName("txtUserName");
-
-        GridLayout layout= new GridLayout(2,1,3,3);
-        lpanelusr.setLayout(layout);
-        tpanelusr.setLayout(layout);
-
-      //  mainPanel.setBorder(BorderFactory.createEtchedBorder());
-      //  mainPanel2.setBorder(BorderFactory.createEtchedBorder());
-
-
-       lpanelusr.add(lblFirstName);
-
-       lpanelusr.add(lblLastName) ;
-
-       tpanelusr.add(txtFirstName);
-
-       tpanelusr.add(txtLastName);
-       uinpanel.setBorder(BorderFactory.createTitledBorder(
-               BorderFactory.createEtchedBorder(),
-               resourceMap.getString("uinpanel.border.title"),
-               javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
-               javax.swing.border.TitledBorder.DEFAULT_POSITION,
-               resourceMap.getFont("border.title.Font"),
-               resourceMap.getColor("border.title.Color")));
-        uinpanel.add(lpanelusr);
-        uinpanel.add(tpanelusr);
-        uoutpanel.add(uinpanel);
 
  //        mainPanel2.add(lblUserName);
 
@@ -316,16 +253,63 @@ public class DrugfactsView extends JFrame{
 //        gc.gridx = 2;
 //        gc.gridy = 1;
 //        mainPanel2.add(txtAddress, gc);
-        add(uoutpanel,BorderLayout.WEST);
         //add(mainPanel2);
-        //add(menuBar,BorderLayout.NORTH);
-        add(stdtbar,BorderLayout.NORTH);
+        setJMenuBar(menuBar);
+        add(stdtbar,BorderLayout.PAGE_START);
         setLocationRelativeTo(null);
+         userDetailPanel = new UserDetailsForm();
+         add(userDetailPanel,BorderLayout.WEST);
+         userDetailPanel.setVisible(false);
+
+
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        dbConnect = new DrugFactsConnect();
+    }
+    @org.jdesktop.application.Action
+    public void aSave(){
+
+        if (userDetailPanel != null){
+            String firstName = userDetailPanel.getTxtFirstName();
+            String lastName = userDetailPanel.getTxtLastName();
+            String sql = "INSERT INTO USERS ( FNAME, LNAME, USERNAME, PASSWORD, "
+                    + "ACTIVE ) VALUES ('" + firstName+"','" + lastName +"'," 
+                    + "'jkikuyu'" +","+ "'abc'" + ','+ 1 + ")";
+            if(dbConnect.update(sql)){
+                 JOptionPane.showMessageDialog(this,"successfully saved");
+                 userDetailPanel.setTxtFirstName("");
+                 userDetailPanel.setTxtLastName("");
+                 btnSave.setEnabled(false);
+                 
+             }
+
+        }
+        else{
+            
+        }
 
     }
     @org.jdesktop.application.Action
-    public void newRecord() {
+    public void aDelete(){
+
+    }
+    @org.jdesktop.application.Action
+    public void aBack(){
+
+    }
+
+    @org.jdesktop.application.Action
+    public void drugFactsDetail() {
+        JOptionPane.showMessageDialog(this,"Invalid password. " +
+                "Try again.","Error Message",JOptionPane.ERROR_MESSAGE);
+    }
+    @org.jdesktop.application.Action
+    public void showUserDetail() {
+
+        if(userDetailPanel != null){
+         userDetailPanel.setVisible(true);
+         btnSave.setEnabled(true);
+
+        }
     }
 
     @org.jdesktop.application.Action
@@ -338,30 +322,39 @@ public class DrugfactsView extends JFrame{
         DrugfactsApp.getApplication().show(aboutBox);
     }
 	public JButton addToolbarButton( JToolBar toolBar, boolean bUseImage,
-            String sButtonText,String sButton, String sToolHelp )
+            String sButtonText,String sButton, String sToolHelp,javax.swing.Action action)
 	{
 		JButton b;
 
 		// Create a new button
 		if( bUseImage ){
-                        URL url = getClass().getResource("resources/new.gif");
+                        URL url = getClass().getResource("resources/" + sButton + ".gif");
                         //System.out.println(url.toString());
-			b = new JButton( new ImageIcon(url));
+			b = new JButton();
+                        b.setAction(action);
+                        b.setText("");
+
+                        b.setName(sButton);
+                        b.setIcon(new ImageIcon(url));
                 }
 		else{
 			b = (JButton)toolBar.add( new JButton());
                 }
                             
 		// Add the button to the toolbar
+                //b.setAction(action);
+
 		toolBar.add( b );
 
 		// Add optional button text
-		if( sButtonText != null )
-			b.setText( sButtonText );
+		if( b.getIcon() instanceof Icon )
+                    b.setMargin( new Insets( 0, 0, 0, 0 ) );
+
 		else
 		{
-			// Only a graphic, so make the button smaller
-			b.setMargin( new Insets( 0, 0, 0, 0 ) );
+
+                    // graphics not preset use text
+                    b.setText( sButtonText );
 		}
 
 
@@ -369,14 +362,9 @@ public class DrugfactsView extends JFrame{
 		if( sToolHelp != null )
 			b.setToolTipText( sToolHelp );
 
-		// Make sure this button sends a message when the user clicks it
-		b.setActionCommand( "Toolbar:" + sButton );
-		//b.addActionListener( this );
-                b.setAction(null);
 
 		return b;
 	}
-
 
 }
 

@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The purpoose of this class is to connect to the HSQL database database using JDBC
+ * The purpose of this class is to connect to the HSQL database database using JDBC
  * @author Jude KIkuyu
  */
 public class DrugFactsConnect {
@@ -43,7 +43,7 @@ public class DrugFactsConnect {
                 System.err.println("\nNot allowed to access the JDBC driver " + driver);
                 iae.printStackTrace(System.err);
             }
-            con = DriverManager.getConnection("jdbc:hsqldb:drugeffects", "SA", "");
+            con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\hsqldb\\data\\drugeffects", "SA", "");
         } catch (SQLException ex) {
             Logger.getLogger(DrugFactsConnect.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -80,6 +80,7 @@ public class DrugFactsConnect {
         else{
             try {
                 Statement st = con.createStatement();
+
                 // db writes out to files and performs clean shuts down
                 // otherwise there will be an unclean shutdown
                 // when program ends
@@ -117,13 +118,18 @@ public class DrugFactsConnect {
     }
 
 //use for SQL commands CREATE, DROP, INSERT and UPDATE
-    public synchronized void update(String expression){
+    public synchronized boolean update(String expression){
 
-
+        boolean isSuccess = false;
         try {
             Statement st = null;
             st = con.createStatement(); // statements
+//            ResultSet rs = st.executeQuery("SELECT * FROM   INFORMATION_SCHEMA.TABLES");
+//            while(rs.next()){
+//                System.out.println(rs.getString(1));
+//            }
             int i = st.executeUpdate(expression); // run the query
+
             if (i == -1) {
                 System.out.println("db error : " + expression);
             }
@@ -131,7 +137,9 @@ public class DrugFactsConnect {
         } // void update()
         catch (SQLException ex) {
             Logger.getLogger(DrugFactsConnect.class.getName()).log(Level.SEVERE, null, ex);
+            isSuccess =false;
         }
+        return isSuccess;
     }    // void update()
 
     public static void dump(ResultSet rs) {
